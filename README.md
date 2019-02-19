@@ -48,7 +48,7 @@ c.NotebookApp.notebook_dir = '/home/empo'
 sudo jupyter-notebook --allow-root
 ```
 * [인바운드] - [편집] - [규칙 추가] - [사용자 지정 TCP] - [8888]번 포트 열기 - 허용 IP로 [0.0.0.0/0] 설정
-* ({Host}:8888) 같은 형태로 주피터 노트북에 접속 -> 접속 장애시 도메인 이름 대신 IP 주소 입력(http://{Host}:8888)
+* (http://{Host}:8888) 같은 형태로 주피터 노트북에 접속
 * jupyter notebook 항상 실행 상태로 만들기
 ```
 sudo jupyter-notebook --allow-root
@@ -71,4 +71,112 @@ sudo vi /home/ubuntu/.jupyter/jupyter_notebook_config.py
 c.NotebookApp.certfile = u'/home/ubuntu/ssl/cert.pem'
 c.NotebookApp.keyfile = u'/home/ubuntu/ssl/cert.key'
 ```
-* (https://{Host}:8888) 같은 형태로 주피터 노트북에 접속 -> 접속 장애시 도메인 이름 대신 IP 주소 입력(https://{Host}:8888)
+* (https://{Host}:8888) 같은 형태로 주피터 노트북에 접속
+## [부록] Docker 설치하기 (Ubuntu 18.04)
+```
+# 시작하기 전에 볼륨 크기 넉넉하게 만들기
+sudo apt update
+sudo apt install apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+sudo apt update
+apt-cache policy docker-ce
+sudo apt install docker-ce
+# 설치 완료 후에 도커 상태 확인
+sudo systemctl status docker
+# Hello World 이미지 다운로드 및 실행
+docker pull hello-world
+docker images
+docker run hello-world
+docker ps -a
+docker rm [Container ID]
+```
+## [부록] Bitbucket과 Visual Studio Code를 이용한 Node.js 개발환경 구축하기
+```
+# [Bitbucket](https://bitbucket.org) 회원가입 및 로그인
+# [대시보드] - [Create repository] - [docker-node] 이름 설정
+# C:/Node Example 폴더 생성 및 Visual Studio Code로 연 뒤에 터미널 창 열기
+git init
+git remote add origin https://DongbinNa@bitbucket.org/DongbinNa/docker-node.git
+npm init
+# package.json 작성하기 (기본 설정 그대로)
+{
+  "name": "node-example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://DongbinNa@bitbucket.org/DongbinNa/docker-node.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "homepage": "https://bitbucket.org/DongbinNa/docker-node#readme"
+}
+# Express 설치하기
+npm install --save express
+# server.js 파일 생성하기
+const app = require('express')();
+app.get('/', (req, res, next) => {
+    res.send('Hello World!');
+});
+app.listen(3000, () => {
+    console.log('Server is running!');
+;})
+# 터미널에서 서버 실행하기
+node server.js
+# .gitignore 파일 생성하기
+/node_modules
+# 터미널에서 Git Push 진행하기
+git add .
+git commit -m "Initialize Project"
+git push --set-upstream origin master -f
+```
+## [부록] PM2를 활용해 Node.js 서버 구동시키기
+```
+# EC2 인스턴스에 접속해 클론하기
+curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+sudo apt-get install -y nodejs
+sudo apt-get install -y build-essential
+sudo npm install -g pm2
+git clone https://DongbinNa@bitbucket.org/DongbinNa/docker-node.git
+# 서버 구동시키기
+cd docker-node
+npm install
+pm2 start server.js
+# 서버를 끌 땐 다음과 같이 하기
+pm2 stop server.js
+```
+## [부록] Docker File 작성 및 실행
+```
+# cd /home/ubuntu/docker-node
+# sudo vi Dockerfile
+FROM node
+MAINTAINER Dongbin Na "ndb796@naver.com"
+RUN npm install -g pm2 node-gyp
+ENV NODE_ENV production
+EXPOSE 3000
+COPY ./ /docker-node
+RUN npm install --prefix /docker-node
+CMD ["pm2-docker", "docker-node/server.js"]
+# Docker File 빌드하기
+docker build -t node-example ./
+# Docker 이미지 실행하기 (포트 포워딩 수행)
+docker run -p 3000:3000 node-example
+# [보안 그룹] - [3000번 포트 열기] - 접속하기
+# 남은 용량을 확인할 때는 df -h
+git add .
+git commit -m "Add Dockerfile"
+git push
+```
+## [부록] Docker File 자동 빌드
+```
+# [도커 허브](https://hub.docker.com/) 회원가입 및 로그인
+# [Create Repository] - [이름으로 node-example 넣기] - [BitBucket 아이콘 클릭] - [Connect] - [docker-node 프로젝트 선택] - [build settings] - [Branch master 확인] - [Create & Build] - [Recent builds] 탭에서 실시간으로 Build가 이루어지고 있는 것을 확인
+# 도커 허브에서 빌드가 완료되고 [Success]를 확인한 뒤에 이미지 가져와 실행
+docker pull ndb796/node-example
+docker run -p 3000:3000 ndb796/node-example
+```

@@ -197,7 +197,7 @@ require('data-utils');
 
 app.get('/save', (req, res, next) => {
     var dt = new Date();
-    fse.outputFile('./saved/' + randomstring.generate(), dt, err => {
+    fse.outputFile('/saved/' + randomstring.generate(), dt, err => {
         if(err) {
             res.send('Error!');
             console.log('Error!');
@@ -217,13 +217,13 @@ app.listen(3000, () => {
 ;})
 # .gitignore 설정
 /node_modules
-/saved
 # 관련 모듈 설정
 npm install --save randomstring
 npm install --save data-utils
 npm install --save fs-extra
 # 서버 구동시키기
 pm2 start server.js
+# 테스트 결과 파일이 잘 저장되는 것을 확인
 ```
 ## [부록] Docker 재빌드
 ```
@@ -233,5 +233,9 @@ git commit -m "Add File Write Module"
 git push
 # [Docker Hub 접속] - [Builds 탭] - Docker 빌드가 이루어지고 있는지 확인 - 필요에 따라서 [Trigger] - 빌드 
 docker pull ndb796/node-example
-docker run -p 3000:3000 -v /saved:/docker-node/saved ndb796/node-example
+docker run -p 3000:3000 -v /saved:/saved ndb796/node-example
+# 테스트 결과 호스트에 파일이 잘 저장되는 것을 확인
+# 다른 터미널 세션에서 해당 컨테이너에 접근할 수 있음
+docker ps -a
+docker exec -it {컨테이너 ID} /bin/bash
 ```

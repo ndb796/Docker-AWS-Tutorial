@@ -180,3 +180,58 @@ git push
 docker pull ndb796/node-example
 docker run -p 3000:3000 ndb796/node-example
 ```
+## [부록] 서버에 추가 기능 넣기
+```
+# AWS EC2 인스턴스에 접속하여 도커 컨테이너를 종료하기
+git clone https://DongbinNa@bitbucket.org/DongbinNa/docker-node.git
+cd docker-node
+sudo apt-get install npm
+sudo npm install -g pm2 node-gyp
+npm install
+# 이후에 server.js 소스코드 수정하기
+const app = require('express')();
+var randomstring = require("randomstring");
+const fse = require('fs-extra');
+
+require('data-utils');
+
+app.get('/save', (req, res, next) => {
+    var dt = new Date();
+    fse.outputFile('./saved/' + randomstring.generate(), dt, err => {
+        if(err) {
+            res.send('Error!');
+            console.log('Error!');
+        } else {
+            res.send('Saved!');
+            console.log('Saved!');
+        }
+    });
+});
+
+app.get('/', (req, res, next) => {
+    res.send('Hello World!');
+});
+
+app.listen(3000, () => {
+    console.log('Server is running!');
+;})
+# .gitignore 설정
+/node_modules
+/saved
+# 관련 모듈 설정
+npm install --save randomstring
+npm install --save data-utils
+npm install --save fs-extra
+# 서버 구동시키기
+pm2 start server.js
+```
+## [부록] Docker 재빌드
+```
+# 변경된 서버 프로그램 반영하기
+git add .
+git commit -m "Add File Write Module"
+git push
+# [Docker Hub 접속] - [Builds 탭] - Docker 빌드가 이루어지고 있는지 확인 - 필요에 따라서 [Trigger] - 빌드 
+docker pull ndb796/node-example
+docker run -p 3000:3000 -v /saved:/docker-node/saved ndb796/node-example
+```
